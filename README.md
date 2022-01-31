@@ -1,9 +1,10 @@
-# Parclean
+# Parstager
 
-A simple way to reduce your “diff footprint” when using Parinfer on a team:
+A simple way to reduce your “diff footprint” when using Parinfer on a team
+(when [parlinter] is not an option):
 
 ```
-parclean src                # 1. clean src/ files of some parinfer changes
+parstager src                # 1. clean src/ files of some parinfer changes
 git add src                 # 2. stage src/
 git commit -m 'my changes'  # 3. commit changes
 ```

@@ -11,22 +11,23 @@
 
 (defn process-fname [fname]
   (println fname)
-  (let [prev (z/of-string (orig-source fname))
+  (let [prev (sexprs->src (z/of-string (orig-source fname)))
         curr (z/of-string (slurp fname))]))
 
 (defn main []
   (doseq [fname (changed-files)]
     (process-fname fname)))
 
-(defn all-forms [zloc]
-  (loop [forms [] zloc zloc]
-    (if (z/end? zloc)
-      forms
-      (recur (conj forms zloc)
-             (z/right zloc)))))
+(defn sexprs->src [zloc]
+  (->> zloc
+       (iterate z/right)
+       (take-while (complement z/end?))
+       (map (juxt z/sexpr z/string))
+       (into {})))
 
 (comment
   (def fname "parstager.clj")
   (def curr (z/of-string (slurp fname) {:track-position? true}))
+  (sexprs->src curr)
   (doseq [p (all-forms curr)]
     (prn (z/string p))))

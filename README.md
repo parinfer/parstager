@@ -1,9 +1,7 @@
 # Parstager
 
-Parinfer has to reformat an entire file, even when editing just one function.
-
-Parstager “unformats” the other functions that were only changed by parinfer’s formatter,
-to allow a tidier staging of changes on team projects.
+Small edits made with [Parinfer] can create noisy diffs across the entire file, related to formatting.
+To prevent a large commit diff, Parstager “unformats” the top-level functions that were only changed by parinfer’s formatter.
 
 ```
 parstager src               # 1. clean src/ files of some parinfer changes

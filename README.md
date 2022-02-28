@@ -1,5 +1,7 @@
 # Parstager
 
+_Minimize whitespace diffs when using [Parinfer]._
+
 Restore the original formatting of functions modified by Parinfer, using git `HEAD`.
 
 ```
@@ -19,5 +21,6 @@ Try using [parindent]’s reader to parse each top-level form.
     1. if current form is found in HEAD (ignoring whitespace), replace it with the original HEAD form
 1. write the new forms back to file
 
+[parinfer]:https://github.com/shaunlebron/parinfer
 [parlinter]:https://github.com/shaunlebron/parlinter
 [parindent]:https://github.com/shaunlebron/parindent

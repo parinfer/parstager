@@ -2,7 +2,7 @@
 
 _Minimize whitespace diffs when using [Parinfer]._
 
-Restore the original formatting of functions modified by Parinfer, using git `HEAD`.
+Parstager restores the original formatting of functions modified by Parinfer, using git `HEAD`.
 
 ```
 parstager src               # 1. clean src/ files of some parinfer changes

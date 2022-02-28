@@ -1,7 +1,6 @@
 # Parstager
 
-Small edits made with [Parinfer] can create noisy diffs across the entire file, related to formatting.
-To prevent a large commit diff, Parstager “unformats” the top-level functions that were only changed by parinfer’s formatter.
+Restore the original formatting of functions modified by Parinfer, using git `HEAD`.
 
 ```
 parstager src               # 1. clean src/ files of some parinfer changes

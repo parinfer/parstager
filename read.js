@@ -64,10 +64,6 @@ function getInitialState(text, hooks = {}) {
     errorPosCache: {} //      [object] - maps error name to a potential error position
   };
 
-  if (hooks.onInitState) {
-    hooks.onInitState(state);
-  }
-
   return state;
 }
 
@@ -138,10 +134,6 @@ function initLine(state) {
   state.isEscaping = false;
   state.trackingIndent = !state.isInStr;
   state.trackingTokenStart = !state.isInStr;
-
-  if (state.hooks.onInitLine) {
-    state.hooks.onInitLine(state);
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -196,9 +188,6 @@ function onOpenParen(state) {
     };
     onTokenStart(state, opener);
     state.trackingTokenStart = true;
-    if (state.hooks.onOpener) {
-      state.hooks.onOpener(state, opener);
-    }
     state.parenStack.push(opener);
   }
 }
@@ -208,6 +197,10 @@ function onMatchedCloseParen(state) {
   const { lineNo, x, ch } = state;
   opener.closer = { lineNo, x, ch };
   state.trackingTokenStart = true;
+  const f = state.hooks.onTopLevelForm
+  if (f && state.parenStack.length == 0) {
+    f(state, opener.lineNo, opener.closer.lineNo+1);
+  }
 }
 
 function onUnmatchedCloseParen(state) {
@@ -293,9 +286,6 @@ function onChar(state) {
 
 function onIndent(state) {
   state.trackingIndent = false;
-  if (state.hooks.onIndent) {
-    state.hooks.onIndent(state);
-  }
 }
 
 function checkIndent(state) {
@@ -330,10 +320,6 @@ function finalizeState(state) {
     throw error(state, ERROR_UNCLOSED_PAREN);
   }
   state.success = true;
-
-  if (state.hooks.onFinalState) {
-    state.hooks.onFinalState(state);
-  }
 }
 
 function processError(state, e) {

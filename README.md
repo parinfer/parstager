@@ -1,5 +1,6 @@
 # Parstager
 
+
 _Minimize whitespace diffs when using [Parinfer]._
 
 Parstager restores the original formatting of functions modified by Parinfer, using git `HEAD`.
@@ -12,14 +13,33 @@ git commit -m 'my changes'  # 3. commit changes
 
 ## TODO
 
-Try using [parindent]’s reader to parse each top-level form.
+```
+MODIFY read.js to spit out top-level open and paren line number pairs
 
-1. given the input filename, get the original source from git HEAD
-1. parse all top-level forms in HEAD
-1. parse all top-level forms in current file
-1. for each top-level form in current file:
-    1. if current form is found in HEAD (ignoring whitespace), replace it with the original HEAD form
-1. write the new forms back to file
+WE NEED:
+- list of line number ranges of top-level parens
+- then merge adjacent ranges
+WHICH GIVES:
+- line-level blocks to check
+- even blocks are considered unchecked text lines
+- odd blocks are considered checked paren lines
+
+in HEAD:
+  for each odd block:
+    add to a “restore” map:
+      parenMode(block) -> original text
+
+in current file:
+  for each block:
+    if even, print block
+    if odd:
+      for each top form:
+        with each subsequent line from the following even block appended to it:
+          if text is found in restore map:
+            print restored lookup
+            print rest of subsequent even block
+            skip past subsequent block
+```
 
 [parinfer]:https://github.com/shaunlebron/parinfer
 [parlinter]:https://github.com/shaunlebron/parlinter

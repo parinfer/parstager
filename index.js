@@ -13,10 +13,8 @@ function getModifiedFiles(pattern) {
     .map(e => e[1])
 }
 
-function getBeforeAndAfter(filename) {
-  const before = execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
-  const after = fs.readFileSync(filename)
-  return [before,after]
+function getBeforeText(filename) {
+  return execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
 }
 
 function padBlockRanges(ranges,n) {
@@ -61,25 +59,36 @@ function createRestoreLookup(lines, ranges) {
   return restore
 }
 
+function getRestoreLookup(filename) {
+  const text = getBeforeText(filename)
+  const lines = text.split('\n')
+  const ranges = getBlockRanges(text, lines.length)
+  return createRestoreLookup(lines, ranges)
+}
+
+function getRestoredText(filename, restore) {
+  const text = fs.readFileSync(filename,'utf8')
+  const lines = text.split('\n')
+  const ranges = getBlockRanges(text, lines.length)
+
+  let result = []
+  for (const [i,range] of ranges.entries()) {
+    if (i % 2 == 0) {
+      result.push(...lines.slice(...range))
+    } else {
+      // with each subsequent line from the following even block appended to it:
+      //   if text is found in restore map:
+      //     print restored lookup
+      //     print rest of subsequent even block
+      //     skip past subsequent block
+    }
+  }
+}
+
 function processFile(filename) {
-  const [beforeText, afterText] = getBeforeAndAfter(filename)
-  const beforeLines = beforeText.split('\n')
-  const beforeRanges = getBlockRanges(beforeText, beforeLines.length)
-  const restore = createRestoreLookup(beforeLines, beforeRanges)
-
-  const afterLines = afterText.split('\n')
-  const afterRanges = getBlockRanges(afterText, afterLines.length)
-
-  // write to filename:
-  // for each block:
-  //   if even, print block
-  //   if odd:
-  //     for each top form:
-  //       with each subsequent line from the following even block appended to it:
-  //         if text is found in restore map:
-  //           print restored lookup
-  //           print rest of subsequent even block
-  //           skip past subsequent block
+  const restore = getRestoreLookup(filename)
+  const newText = getRestoredText(filename, restore)
+  fs.writeFileSync(filename, newText)
 }
 
 function main(pattern) {

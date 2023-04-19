@@ -7,13 +7,6 @@ import { execSync } from 'node:child_process'
 import * as parenReader from './read.js'
 import parinfer from 'parinfer'
 
-function range(a,b,step=1) {
-  if (b == null) [a,b] = [0,a]
-  const result = []
-  for (let i=a; (a<=b ? i<b : i>b); i+=step) result.push(i)
-  return result
-}
-
 //------------------------------------------------------------------------------
 // Get “Blocks”
 //
@@ -36,7 +29,7 @@ function range(a,b,step=1) {
 function getBlocks(text, n) {
   // top-level paren forms
   const blocks = []
-  parenReader.readText(text, {
+  const {error} = parenReader.readText(text, {
     onTopLevelForm(state, [a,b]) {
       const prev = blocks[blocks.length-1]
       if (prev && a < prev[1]) {
@@ -47,6 +40,9 @@ function getBlocks(text, n) {
       }
     }
   })
+  if (error) {
+    throw error
+  }
   // add line ranges between each top-level paren form representing comments or whitespace
   const padded = []
   for (const [i,curr] of blocks.entries()) {
@@ -88,7 +84,7 @@ function createRestoreLookup(oldText) {
 }
 
 //------------------------------------------------------------------------------
-// Try to Restore Lines
+// Try to Lookup Restorable Lines
 //
 // When Parinfer formats a string with trailing parentheses are their own line,
 // it will not remove those lines, and will leave the leading whitespace untouched:
@@ -111,23 +107,34 @@ function createRestoreLookup(oldText) {
 // until finding a restorable block.
 //------------------------------------------------------------------------------
 
-function tryRestoreLines(blocks, i, newLines, restore) {
+function tryLookup(blockA, blockB, newLines, restore) {
   if (i % 2 == 1) {
-    const [a] = blocks[i]
-    const [c,d] = blocks[i+1]
     // Start by trying to subsume the whole next block,
     // then progressively shrink the range until finding a restorable block.
-    for (let b=d; b>=c; b--) {
-      const _new = newLines.slice(a,b).join('\n')
+    //
+    // lines:               lookup in this order:
+    //
+    //                       1   2   3   4
+    // a0     |-------|      |-  |-  |-  |-
+    //  |     |-------|      |   |   |   |
+    //  |     |-------|      |   |   |   |
+    // a1=b0  |-------|      |   |   |   |-
+    //     |  |-------|      |   |   |-
+    //     |  |-------|      |   |-
+    //    b1  |-------|      |-
+    //
+    const [a0,a1] = blockA
+    const [b0,b1] = blockB
+    for (let i=b1; i>=b0; i--) {
+      const _new = newLines.slice(a0,a1).join('\n')
       const _old = restore[_new]
       if (_old) {
         // NOTE: Here we mutate the subsequent block’s range to reflect what was subsumed
-        blocks[i+1][0] = b
+        blockB[0] = b
         return _old.split('\n')
       }
     }
   }
-  return newLines.slice(...blocks[i])
 }
 
 //------------------------------------------------------------------------------
@@ -138,14 +145,41 @@ function restoreText(oldText, newText) {
   const restore = createRestoreLookup(oldText)
   const newLines = newText.split('\n') // lines
   const blocks = getBlocks(newText, newLines.length)
-  return range(blocks.length)
-    .map(i => tryRestoreLines(blocks, i, newLines, restore))
-    .flat()
-    .join('\n')
+  let restoreCount = 0
+  const finalLines = []
+  for (let i=0; i<blocks.length; i++) {
+    if (i % 2 == 1) {
+      const restored = tryLookup(blocks[i], blocks[i+1], newLines, restore)
+      if (restored) {
+        finalLines.push(...restored)
+        restoreCount++
+        continue
+      }
+    }
+    finalLines.push(...newLines.slice(...blocks[i]))
+  }
+  const finalText = finalLines.join('\n')
+  return { restoreCount, finalText }
 }
 
 //------------------------------------------------------------------------------
 // Git helpers
+//------------------------------------------------------------------------------
+
+function getModifiedFiles(pattern) {
+  return execSync(`git status ${pattern||''} --porcelain`, {encoding: 'utf8'})
+    .split('\n')
+    .map(line => [line.substring(0,2), line.substring(3)].map(s => s.trim()))
+    .filter(e => e[0] == 'M')
+    .map(e => e[1])
+}
+
+function getOldFile(filename) {
+  return execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
+}
+
+//------------------------------------------------------------------------------
+// CLI
 //------------------------------------------------------------------------------
 
 // Only processing clojure files for now
@@ -158,31 +192,29 @@ const exts = [
   '.edn',   // Clojure’s extensible data notation
 ]
 
-function getModifiedFiles(pattern) {
-  return execSync('git status ${pattern} --porcelain', {encoding: 'utf8'})
-    .split('\n')
-    .map(line => [line.substring(0,2), line.substring(3)].map(s => s.trim()))
-    .filter(e => e[0] == 'M')
-    .map(e => e[1])
-    .filter(e => exts.includes(extname(e)))
-}
+function cli(pattern) {
 
-function getOldFile(filename) {
-  return execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
-}
-
-//------------------------------------------------------------------------------
-// Main
-//------------------------------------------------------------------------------
-
-function processFile(filename) {
-  const oldText = getOldFile(filename)
-  const newText = fs.readFileSync(filename,'utf8')
-  const finalText = restoreFile(oldText, newText)
-  fs.writeFileSync(filename, finalText)
-}
-
-function main(pattern) {
   const filenames = getModifiedFiles(pattern)
-  filenames.forEach(processFile)
+    .filter(e => exts.includes(extname(e)))
+
+  for (const filename of filenames) {
+    process.stdout.write(`${filename}… `)
+    try {
+      const oldText = getOldFile(filename)
+      const newText = fs.readFileSync(filename,'utf8')
+      const {restoreCount, finalText} = restoreText(oldText, newText)
+      if (finalText === newText) {
+        process.stdout.write('skipped')
+      } else {
+        fs.writeFileSync(filename, finalText)
+        if (finalText === oldText) process.stdout.write('restored whole file')
+        else if (restoreCount > 0) process.stdout.write(`restored ${restoreCount} blocks`)
+      }
+    } catch (e) {
+      process.stdout.write(`failed: ${JSON.stringify(e)}`)
+    } finally {
+      process.stdout.write('\n')
+    }
+  }
 }
+

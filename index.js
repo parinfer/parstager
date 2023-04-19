@@ -1,9 +1,13 @@
 
 const fs = require('fs')
+
+const { extname } = require('node:path')
 const { execSync } = require('node:child_process')
 
 const parenReader = require('./read.js')
 const parinfer = require('parinfer')
+
+const exts = ['.clj', '.cljs', '.cljc', '.edn']
 
 function getModifiedFiles(pattern) {
   return execSync('git status ${pattern} --porcelain', {encoding: 'utf8'})
@@ -11,6 +15,7 @@ function getModifiedFiles(pattern) {
     .map(line => [line.substring(0,2), line.substring(3)].map(s => s.trim()))
     .filter(e => e[0] == 'M')
     .map(e => e[1])
+    .filter(e => exts.includes(extname(e)))
 }
 
 function getBeforeText(filename) {

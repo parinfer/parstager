@@ -25,7 +25,7 @@ function getBlocks(text, n) {
   // top-level paren forms
   const forms = []
   const {error} = parenReader.readText(text, {
-    onTopLevelForm(state, [a,b]) {
+    onTopLevelForm(state,a,b) {
       const prev = forms[forms.length-1]
       if (prev && a < prev[1]) {
         // Ensure top-level paren forms sharing the same line are merged into the same line range.
@@ -103,31 +103,29 @@ function createRestoreLookup(oldText) {
 //------------------------------------------------------------------------------
 
 function tryLookup(blockA, blockB, newLines, restore) {
-  if (i % 2 == 1) {
-    // Start by trying to subsume the whole next block,
-    // then progressively shrink the range until finding a restorable block.
-    //
-    // lines:               lookup in this order:
-    //
-    //                       1   2   3   4
-    // a0     |-------|      |-  |-  |-  |-
-    //  |     |-------|      |   |   |   |
-    //  |     |-------|      |   |   |   |
-    // a1=b0  |-------|      |   |   |   |-
-    //     |  |-------|      |   |   |-
-    //     |  |-------|      |   |-
-    //    b1  |-------|      |-
-    //
-    const [a0,a1] = blockA
-    const [b0,b1] = blockB
-    for (let i=b1; i>=b0; i--) {
-      const _new = newLines.slice(a0,a1).join('\n')
-      const _old = restore[_new]
-      if (_old) {
-        // NOTE: Here we mutate the subsequent block’s range to reflect what was subsumed
-        blockB[0] = b
-        return _old.split('\n')
-      }
+  // Start by trying to subsume the whole next block,
+  // then progressively shrink the range until finding a restorable block.
+  //
+  // lines:               lookup in this order:
+  //
+  //                       1   2   3   4
+  // a0     |-------|      |-  |-  |-  |-
+  //  |     |-------|      |   |   |   |
+  //  |     |-------|      |   |   |   |
+  // a1=b0  |-------|      |   |   |   |-
+  //     |  |-------|      |   |   |-
+  //     |  |-------|      |   |-
+  //    b1  |-------|      |-
+  //
+  const [a0,a1] = blockA
+  const [b0,b1] = blockB
+  for (let i=b1; i>=b0; i--) {
+    const _new = newLines.slice(a0,a1).join('\n')
+    const _old = restore[_new]
+    if (_old) {
+      // NOTE: Here we mutate the subsequent block’s range to reflect what was subsumed
+      blockB[0] = i
+      return _old.split('\n')
     }
   }
 }

@@ -220,7 +220,7 @@ function onCloseParen(state) {
 function onTab(state) {
   if (isInCode(state)) {
     const { lineNo, x } = state;
-    console.warn("\nTAB character found at", { lineNo, x });
+    // console.warn("\nTAB character found at", { lineNo, x });
   }
 }
 

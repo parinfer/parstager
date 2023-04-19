@@ -66,7 +66,8 @@ function cli(pattern='') {
         }
       }
     } catch (e) {
-      process.stdout.write(`failed: ${JSON.stringify(e)}`)
+      process.stdout.write('failed\n')
+      console.error(e)
     } finally {
       process.stdout.write('\n')
     }

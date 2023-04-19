@@ -28,15 +28,15 @@ import parinfer from 'parinfer'
 
 function getBlocks(text, n) {
   // top-level paren forms
-  const blocks = []
+  const forms = []
   const {error} = parenReader.readText(text, {
     onTopLevelForm(state, [a,b]) {
-      const prev = blocks[blocks.length-1]
+      const prev = forms[forms.length-1]
       if (prev && a < prev[1]) {
         // Ensure top-level paren forms sharing the same line are merged into the same line range.
         prev[1] = b
       } else {
-        blocks.push([a,b])
+        forms.push([a,b])
       }
     }
   })
@@ -44,16 +44,16 @@ function getBlocks(text, n) {
     throw error
   }
   // add line ranges between each top-level paren form representing comments or whitespace
-  const padded = []
-  for (const [i,curr] of blocks.entries()) {
-    const prev = blocks[i-1] || [0,0]
-    padded.push([prev[1],curr[0]])
-    padded.push(curr)
-    if (i == blocks.length-1) {
-      padded.push([curr[1],n])
+  const blocks = []
+  for (const [i,curr] of forms.entries()) {
+    const prev = forms[i-1] || [0,0]
+    blocks.push([prev[1],curr[0]])
+    blocks.push(curr)
+    if (i == forms.length-1) {
+      blocks.push([curr[1],n])
     }
   }
-  return padded
+  return blocks
 }
 
 //------------------------------------------------------------------------------

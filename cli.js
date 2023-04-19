@@ -37,10 +37,15 @@ const exts = [
   '.edn',   // Clojure’s extensible data notation
 ]
 
-function cli(pattern) {
+function cli(pattern='') {
 
   const filenames = getModifiedFiles(pattern)
     .filter(e => exts.includes(extname(e)))
+
+  if (filenames.length == 0) {
+    console.log('No modified clojure files found.')
+    process.exit(1)
+  }
 
   for (const filename of filenames) {
     process.stdout.write(`${filename}… `)
@@ -68,3 +73,4 @@ function cli(pattern) {
   }
 }
 
+cli(...process.argv.slice(2))

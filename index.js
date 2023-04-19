@@ -49,10 +49,11 @@ function createRestoreLookup(lines, ranges) {
   const restore = {}
   for (const [i,range] of ranges.entries()) {
     if (i % 2 == 1) {
-      const original = lines.slice(...range).join('\n')
+      const origLines = lines.slice(...range)
+      const original = origLines.join('\n')
       const corrected = parinfer.parenMode(original).text
       if (original !== corrected) {
-        restore[corrected] = original
+        restore[corrected] = origLines
       }
     }
   }
@@ -66,23 +67,31 @@ function getRestoreLookup(filename) {
   return createRestoreLookup(lines, ranges)
 }
 
-function getRestoredText(filename, restore) {
-  const text = fs.readFileSync(filename,'utf8')
-  const lines = text.split('\n')
-  const ranges = getBlockRanges(text, lines.length)
-
-  let result = []
-  for (const [i,range] of ranges.entries()) {
-    if (i % 2 == 0) {
-      result.push(...lines.slice(...range))
-    } else {
-      // with each subsequent line from the following even block appended to it:
-      //   if text is found in restore map:
-      //     print restored lookup
-      //     print rest of subsequent even block
-      //     skip past subsequent block
+function getOrigLines(ranges, i, input, restore) {
+  if (i % 2 == 1) {
+    const [a] = ranges[i]
+    const [c,d] = ranges[i+1]
+    for (let b=d; b>=c; b--) {
+      const corrected = input.slice(a,b).join('\n')
+      const origLines = restore[corrected]
+      if (origLines) {
+        ranges[i+1][0] = b
+        return origLines
+      }
     }
   }
+  return input.slice(...ranges[i])
+}
+
+function getRestoredText(filename, restore) {
+  const text = fs.readFileSync(filename,'utf8')
+  const input = text.split('\n') // lines
+  const ranges = getBlockRanges(text, input.length)
+  let output = [] // lines
+  for (let i=0; i<ranges.length; i++) {
+    output.push(...getOrigLines(ranges, i, input, restore))
+  }
+  return output.join('\n')
 }
 
 function processFile(filename) {

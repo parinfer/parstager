@@ -1,5 +1,14 @@
 {
+  "name": "parstager",
+  "version": "0.1.0",
+  "description": "Minimize whitespace diffs when using Parinfer",
   "type": "module",
+
+  "main": "main.js",
+  "bin": {
+    "parstager": "./cli.js"
+  },
+
   "dependencies": {
     "parinfer": "^3.13.1"
   }

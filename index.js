@@ -1,11 +1,11 @@
 
-const fs = require('fs')
+import fs from 'fs'
 
-const { extname } = require('node:path')
-const { execSync } = require('node:child_process')
+import { extname } from 'node:path'
+import { execSync } from 'node:child_process'
 
-const parenReader = require('./read.js')
-const parinfer = require('parinfer')
+import * as parenReader from './read.js'
+import parinfer from 'parinfer'
 
 const exts = ['.clj', '.cljs', '.cljc', '.edn']
 
@@ -18,47 +18,46 @@ function getModifiedFiles(pattern) {
     .filter(e => exts.includes(extname(e)))
 }
 
-function getBeforeText(filename) {
+function getOldText(filename) {
   return execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
 }
 
-function padBlockRanges(ranges,n) {
+function padBlocks(blocks,n) {
   const padded = []
-  for (const [i,range] of ranges.entries()) {
-    const prev = ranges[i-1] || [0,0]
-    padded.push([prev[1],range[0]])
-    padded.push(range)
-    if (i == ranges.length-1) {
-      padded.push([range[1],n])
+  for (const [i,curr] of blocks.entries()) {
+    const prev = blocks[i-1] || [0,0]
+    padded.push([prev[1],curr[0]])
+    padded.push(curr)
+    if (i == blocks.length-1) {
+      padded.push([curr[1],n])
     }
   }
   return padded
 }
 
-function getBlockRanges(text, n) {
-  const ranges = []
+function getBlocks(text, n) {
+  const blocks = []
   parenReader.readText(text, {
-    onTopLevelForm(state, range) {
-      const prev = ranges[ranges.length-1]
-      if (prev && range[0] < prev[1]) {
-        prev[1] = range[1]
+    onTopLevelForm(state, [a,b]) {
+      const prev = blocks[blocks.length-1]
+      if (prev && a < prev[1]) {
+        prev[1] = b
       } else {
-        ranges.push(range)
+        blocks.push([a,b])
       }
     }
   })
-  return padBlockRanges(ranges, n)
+  return padBlock(blocks, n)
 }
 
-function createRestoreLookup(lines, ranges) {
+function createRestoreLookup(lines, blocks) {
   const restore = {}
-  for (const [i,range] of ranges.entries()) {
+  for (const [i,[a,b]] of blocks.entries()) {
     if (i % 2 == 1) {
-      const origLines = lines.slice(...range)
-      const original = origLines.join('\n')
-      const corrected = parinfer.parenMode(original).text
-      if (original !== corrected) {
-        restore[corrected] = origLines
+      const _old = lines.slice(a,b).join('\n')
+      const _new = parinfer.parenMode(_old).text
+      if (_new !== _old) {
+        restore[_new] = _old
       }
     }
   }
@@ -66,35 +65,35 @@ function createRestoreLookup(lines, ranges) {
 }
 
 function getRestoreLookup(filename) {
-  const text = getBeforeText(filename)
+  const text = getOldText(filename)
   const lines = text.split('\n')
-  const ranges = getBlockRanges(text, lines.length)
-  return createRestoreLookup(lines, ranges)
+  const blocks = getBlocks(text, lines.length)
+  return createRestoreLookup(lines, blocks)
 }
 
-function getOrigLines(ranges, i, input, restore) {
+function getOldLines(blocks, i, input, restore) {
   if (i % 2 == 1) {
-    const [a] = ranges[i]
-    const [c,d] = ranges[i+1]
+    const [a] = blocks[i]
+    const [c,d] = blocks[i+1]
     for (let b=d; b>=c; b--) {
-      const corrected = input.slice(a,b).join('\n')
-      const origLines = restore[corrected]
-      if (origLines) {
-        ranges[i+1][0] = b
-        return origLines
+      const _new = input.slice(a,b).join('\n')
+      const _old = restore[_new]
+      if (_old) {
+        blocks[i+1][0] = b
+        return _old.split('\n')
       }
     }
   }
-  return input.slice(...ranges[i])
+  return input.slice(...blocks[i])
 }
 
 function getRestoredText(filename, restore) {
   const text = fs.readFileSync(filename,'utf8')
   const input = text.split('\n') // lines
-  const ranges = getBlockRanges(text, input.length)
+  const blocks = getBlocks(text, input.length)
   let output = [] // lines
-  for (let i=0; i<ranges.length; i++) {
-    output.push(...getOrigLines(ranges, i, input, restore))
+  for (let i=0; i<blocks.length; i++) {
+    output.push(...getOldLines(blocks, i, input, restore))
   }
   return output.join('\n')
 }

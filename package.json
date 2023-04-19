@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "parinfer": "^3.13.1"
   }

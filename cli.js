@@ -7,21 +7,21 @@ import { execSync } from 'node:child_process'
 
 import { restoreText } from './main.js'
 
+const sh = cmd => execSync(cmd, {encoding: 'utf8'})
+
 //------------------------------------------------------------------------------
 // Git helpers
 //------------------------------------------------------------------------------
 
-function getModifiedFiles(pattern) {
-  return execSync(`git status ${pattern||''} --porcelain`, {encoding: 'utf8'})
+const getModifiedFiles = pattern =>
+  sh(`git status ${pattern||''} --porcelain`)
     .split('\n')
     .map(line => [line.substring(0,2), line.substring(3)].map(s => s.trim()))
     .filter(e => e[0] == 'M')
     .map(e => e[1])
-}
 
-function getOldFile(filename) {
-  return execSync(`git show HEAD:${filename}`, {encoding: 'utf8'})
-}
+const restoreOldFile = filename => sh(`git restore ${filename}`)
+const getOldFile = filename => sh(`git show HEAD:${filename}`)
 
 //------------------------------------------------------------------------------
 // CLI
@@ -48,12 +48,17 @@ function cli(pattern) {
       const oldText = getOldFile(filename)
       const newText = fs.readFileSync(filename,'utf8')
       const {restoreCount, finalText} = restoreText(oldText, newText)
-      if (finalText === newText) {
+      if (restoreCount == 0) {
+        console.assert(finalText === newText)
         process.stdout.write('skipped')
       } else {
-        fs.writeFileSync(filename, finalText)
-        if (finalText === oldText) process.stdout.write('restored whole file')
-        else if (restoreCount > 0) process.stdout.write(`restored ${restoreCount} blocks`)
+        if (finalText === oldText) {
+          restoreOldFile(filename)
+          process.stdout.write('restored whole file')
+        } else {
+          fs.writeFileSync(filename, finalText)
+          process.stdout.write(`restored ${restoreCount} blocks`)
+        }
       }
     } catch (e) {
       process.stdout.write(`failed: ${JSON.stringify(e)}`)

@@ -136,7 +136,7 @@ function tryLookup(blockA, blockB, newLines, restore) {
 // Restore as much of the original formatting of the text as possible
 //------------------------------------------------------------------------------
 
-function restoreText(oldText, newText) {
+export function restoreText(oldText, newText) {
   const restore = createRestoreLookup(oldText)
   const newLines = newText.split('\n') // lines
   const blocks = getBlocks(newText, newLines.length)

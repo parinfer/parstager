@@ -13,6 +13,14 @@ const sh = cmd => execSync(cmd, {encoding: 'utf8'})
 // Git helpers
 //------------------------------------------------------------------------------
 
+const isInGitWorkTree = () => {
+  try {
+    return sh(`git rev-parse --is-inside-work-tree 2> /dev/null`).trim() == 'true'
+  } catch (e) {
+    return false
+  }
+}
+
 const getModifiedFiles = pattern =>
   sh(`git status ${pattern||''} --porcelain`)
     .split('\n')
@@ -38,6 +46,11 @@ const exts = [
 ]
 
 function cli(pattern='') {
+
+  if (!isInGitWorkTree()) {
+    console.log('Cannot run outside a git repository.')
+    process.exit(1)
+  }
 
   const filenames = getModifiedFiles(pattern)
     .filter(e => exts.includes(extname(e)))

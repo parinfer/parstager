@@ -1,17 +1,17 @@
-> **NOTE**: Currently testing this in my day-to-day work before publishing.
+> **NOTE**: experimental
 
 # Parstager
 
-_Minimize whitespace diffs when using [Parinfer]._
+Quickly undo Parinfer formatting on unchanged top-level forms. (using the original formatting found in git `HEAD`)
 
-Parstager restores the original formatting of functions modified by Parinfer, using git `HEAD`.
+Helps you minimize diffs when working on teams that don’t use Parinfer or [Parlinter](https://github.com/parinfer/parlinter).
+
+```
+npm install -g parstager
+```
 
 ```
 parstager src               # 1. clean src/ files of some parinfer changes
 git add src                 # 2. stage src/
 git commit -m 'my changes'  # 3. commit changes
 ```
-
-[parinfer]:https://github.com/shaunlebron/parinfer
-[parlinter]:https://github.com/shaunlebron/parlinter
-[parindent]:https://github.com/shaunlebron/parindent

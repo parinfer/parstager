@@ -24,8 +24,8 @@ When working on teams that don’t use Parinfer, diffs can’t be quite large.  
 <thead>
 <tr>
 <th>Original file</th>
-<th>After editing with Parinfer</th>
-<th>After cleaning with Parstager</th>
+<th>Edited with Parinfer</th>
+<th>Cleaned by Parstager</th>
 </tr>
 </thead>
 <tbody valign="top">

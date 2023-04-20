@@ -133,10 +133,6 @@ When working on teams that don’t use Parinfer, diffs can’t be quite large.  
 <td>
 
 ```diff
-diff --git a/user.clj b/user.clj
-index fc23da5..b0cfe0a 100644
---- a/user.clj
-+++ b/user.clj
 @@ -1,25 +1,27 @@
  (ns user
    (:require
@@ -181,10 +177,6 @@ index fc23da5..b0cfe0a 100644
 <td>
 
 ```diff
-diff --git a/user.clj b/user.clj
-index fc23da5..793d09f 100644
---- a/user.clj
-+++ b/user.clj
 @@ -12,10 +12,12 @@
  
  (defn add-strs

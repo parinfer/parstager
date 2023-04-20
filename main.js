@@ -62,7 +62,7 @@ function getBlocks(text, n) {
 // That way, we can use this lookup map to restore the formatting of those same blocks when found in the “new text”.
 //------------------------------------------------------------------------------
 
-function createRestoreLookup(oldText) {
+export function createRestoreLookup(oldText) {
   const lines = oldText.split('\n')
   const blocks = getBlocks(oldText, lines.length)
   const restore = {}
@@ -120,7 +120,7 @@ function tryLookup(blockA, blockB, newLines, restore) {
   const [a0,a1] = blockA
   const [b0,b1] = blockB
   for (let i=b1; i>=b0; i--) {
-    const _new = newLines.slice(a0,a1).join('\n')
+    const _new = newLines.slice(a0,i).join('\n')
     const _old = restore[_new]
     if (_old) {
       // NOTE: Here we mutate the subsequent block’s range to reflect what was subsumed

@@ -23,7 +23,6 @@ When working on teams that don’t use Parinfer, diffs can’t be quite large.  
 <table>
 <thead>
 <tr>
-<th></th>
 <th>Original file</th>
 <th>After editing with Parinfer</th>
 <th>After cleaning with Parstager</th>
@@ -31,7 +30,6 @@ When working on teams that don’t use Parinfer, diffs can’t be quite large.  
 </thead>
 <tbody valign="top">
 <tr>
-<td>File</td>
 <td>
 
 ```clj
@@ -129,7 +127,6 @@ When working on teams that don’t use Parinfer, diffs can’t be quite large.  
 
 </tr>
 <tr>
-<td>Diff</td>
 
 <td></td>
 

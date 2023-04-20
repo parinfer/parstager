@@ -1,3 +1,5 @@
+> **NOTE**: Currently testing this in my day-to-day work before publishing.
+
 # Parstager
 
 _Minimize whitespace diffs when using [Parinfer]._

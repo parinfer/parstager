@@ -2,12 +2,13 @@
 
 import fs from 'fs'
 
-import { extname } from 'node:path'
-import { execSync } from 'node:child_process'
+import path from 'node:path'
+import process from 'node:process'
+import child_process from 'node:child_process'
 
 import { restoreText } from './main.js'
 
-const sh = cmd => execSync(cmd, {encoding: 'utf8'})
+const sh = cmd => child_process.execSync(cmd, {encoding: 'utf8'})
 
 //------------------------------------------------------------------------------
 // Git helpers
@@ -21,15 +22,16 @@ const isInGitWorkTree = () => {
   }
 }
 
-const getModifiedFiles = pattern =>
+const getModifiedRepoFiles = pattern =>
   sh(`git status ${pattern||''} --porcelain`)
     .split('\n')
     .map(line => [line.substring(0,2), line.substring(3)].map(s => s.trim()))
     .filter(e => e[0] == 'M')
     .map(e => e[1])
 
-const restoreOldFile = filename => sh(`git restore ${filename}`)
-const getOldFile = filename => sh(`git show HEAD:${filename}`)
+
+const gitRepoDir = () => sh(`git rev-parse --show-toplevel`).trim()
+const repoToRel = f => path.relative(process.cwd(), path.join(gitRepoDir(), f))
 
 //------------------------------------------------------------------------------
 // CLI
@@ -52,29 +54,30 @@ function cli(pattern='') {
     process.exit(1)
   }
 
-  const filenames = getModifiedFiles(pattern)
-    .filter(e => exts.includes(extname(e)))
+  const repoFiles = getModifiedRepoFiles(pattern)
+    .filter(e => exts.includes(path.extname(e)))
 
-  if (filenames.length == 0) {
+  if (repoFiles.length == 0) {
     console.log('No modified clojure files found.')
     process.exit(1)
   }
 
-  for (const filename of filenames) {
-    process.stdout.write(`${filename}… `)
+  for (const repoFile of repoFiles) {
+    const relFile = repoToRel(repoFile)
+    process.stdout.write(`${relFile}… `)
     try {
-      const oldText = getOldFile(filename)
-      const newText = fs.readFileSync(filename,'utf8')
+      const oldText = sh(`git show HEAD:${repoFile}`)
+      const newText = fs.readFileSync(relFile, 'utf8')
       const {restoreCount, finalText} = restoreText(oldText, newText)
       if (restoreCount == 0) {
         console.assert(finalText === newText)
         process.stdout.write('skipped')
       } else {
         if (finalText === oldText) {
-          restoreOldFile(filename)
+          sh(`git restore ${relFile}`)
           process.stdout.write('restored whole file')
         } else {
-          fs.writeFileSync(filename, finalText)
+          fs.writeFileSync(relFile, finalText)
           process.stdout.write(`restored ${restoreCount} blocks`)
         }
       }

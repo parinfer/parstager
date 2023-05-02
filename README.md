@@ -18,7 +18,7 @@ git commit -m 'my changes'  # 3. commit changes
 
 ## Example
 
-When working on teams that don’t use Parinfer, diffs can’t be quite large.  Parstager helps me isolate diffs to only the functions which I have changed:
+When working on teams that don’t use Parinfer, diffs can be quite large.  Parstager helps me isolate diffs to only the functions which I have changed:
 
 <table>
 <thead>

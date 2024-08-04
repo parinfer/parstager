@@ -72,6 +72,10 @@ export function createRestoreLookup(oldText) {
       const _new = parinfer.parenMode(_old).text
       if (_new !== _old) {
         restore[_new] = _old
+
+        // some editors trim whitespace at the end of each line
+        const _newRTrim = _new.replace(/ +$/gm, '')
+        restore[_newRTrim] = _old
       }
     }
   }
